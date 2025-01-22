@@ -1,0 +1,177 @@
+
+Steps ::
+
+
+1. create a per-line files : .tif, gt.txt, .box.
+   note: it uses 'app/langdata_lstm'.  
+   note: I had to install tff (font type) in my Windows (The app can't just read them from a library) 
+
+python heb_hw/gt.py 
+
+
+---------------------------
+
+
+2. use gui to Start Training
+   set 'tessData folder' to 'app\tessdata_best'
+     note: the installed variant doesn't allow appending ('best')
+   set 'Input ground truth dir' to 'heb_hw\gt'
+   set 'Output dir' to 'heb_hw/data'
+   set 'New language model name' to 'heb_hw'
+   set 'Language type' to 'RTL'
+   note: in this step, it creates per-line files, from og heb.
+       with them, and the files from step 1, it creates a checkout file.
+
+
+---------------------------
+
+
+3. use gui to Generate Best + Fast trained-data
+   note: allow, at the end, copying Fast to app/tessdata (for testing)
+
+
+---------------------------
+
+
+4. test
+   first, copy the traineddata from "heb_hw\data\heb_hw\traineddata_fast" to "app/tessdata"
+
+tesseract -l 65f test/test.jpg "test/ocr (65f)"
+
+
+DONE !
+
+
+---------------------------
+
+Install ::
+
+* python-3.12.4-amd64.exe
+
+* tesseract-ocr-w64-setup-5.4.0.20240606.exe
+
+* tesstrain-windows-GUI-main.zip 
+  (https://codeload.github.com/buliasz/tesstrain-windows-gui/zip/refs/heads/main)
+
+* AutoHotkey_2.0.18_setup.exe  (GUI's dependency)
+  (https://www.autohotkey.com/download/ahk-v2.exe)
+
+---------------------------
+
+dir :
+/app              (tesseract-ocr-w64-setup-5.4.0.20240606.exe)
+  /gui            (tesstrain-windows-gui-main.zip)
+  /langdata_lstm  (github)
+  /tessdata       (exist)
+  /tessdata_best  (github)
+
+---------------------------
+
+Lastly, on GUI, click on "Re-check requirements".
+
+
+---------------------------
+
+
+Explanation ::
+
+we create tif and gt.txt, from both the new font, and the original heb.
+than create a joined checkout from all of them.
+than generate a new traineddata.
+
+
+---------------------------
+
+
+links :
+https://stackoverflow.com/questions/78313097/tesseract-training-new-font-for-hebrew
+
+
+---------------------------
+
+
+
+
+
+
+#
+--max_pages  Maximum number of pages to output (0=unlimited)  (type:int default:0) . 
+each page takes about 1 second. 
+#
+cd..
+text2image --text="tessdata_gui/heb/traineddata_best/heb_traineddata" --outputbase="heb_hw/2" --font="Gveret Levin AlefAlefAlef Regular" --D="heb_hw" --fonts_dir="heb_hw" --max_pages="2" 
+
+
+
+
+#
+create gt.txt :
+#
+python tesstrain/generate_gt_from_box.py -b "heb_hw/ocrd-testset/2.box" -t "heb_hw/ocrd-testset/2.gt.txt"
+#
+ 
+
+#
+error to file, insted of std: debug_file tesseract.log .
+each page takes about 5.5 sec, when max pages is 101. But when no page limitation, it takes 30 sec
+#
+tesseract "heb_hw/2.tif" "heb_hw/2" -l heb box.train.stderr 
+
+
+#
+"Failed to read continue from: heb_hw/101.tr"
+#
+lstmtraining --stop_training --continue_from="heb_hw/2.tr" --traineddata="tessdata/heb.traineddata" --model_output="heb_hw/2.traineddata" 
+
+
+#
+--psm 6 is single column page. 
+--psm 3 (default) is multi-column, fully automated.
+there's also:  
+   -c preserve_interword_spaces=1
+   create pdf
+   multi-langual: -l eng+heb
+(https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html)
+#
+tesseract "test/test.jpg" "test/output_heb_hw.txt" --psm 6 -l heb_hw --tessdata-dir="heb_hw" 
+
+
+notes:
+*. 
+Linux you can redirect stderr and stdout output to /dev/null. E.g.:
+tesseract phototest.tif phototest 1>/dev/null 2>&1
+
+*. py: 
+https://tesseract-ocr.github.io/tessdoc/APIExample.html
+
+
+---------------------------
+https://tesseract-ocr.github.io/tessdoc/Documentation.html#manual-pages
+
+https://medium.com/@levi_yehuda/decoding-ancient-texts-training-tesseract-ocr-to-recognize-hebrew-fonts-in-torah-scrolls-e1f88108f6a1
+---------------------------
+
+
+text2image --text="Data/heb/heb.training_text" --outputbase=output --font="Gveret Levin AlefAlefAlef Regular" --D="%USERPROFILE%/Downloads/Tesseract/Output/" --fonts_dir="%USERPROFILE%/Downloads/Tesseract/" 
+ 
+
+tesseract output.tif "%USERPROFILE%/Downloads/Tesseract/" box.train.stderr 
+
+lstmtraining --stop_training --continue_from=".tr" --traineddata="D/tessdata_best/heb.traineddata" - model_output output/hebrew.traineddata
+
+
+
+
+
+
+XXXXXXXXXXX
+
+text2image --fonts_dir="%USERPROFILE%/Downloads/Tesseract/" --list_available_fonts
+
+
+cd "D\heb"
+
+text2image --text="D\heb\heb.training_text" --outputbase=output --font="Gveret Levin AlefAlefAlef Regular" --fonts_dir="%USERPROFILE%/Downloads/Tesseract/" --D="%USERPROFILE%/Downloads/Tesseract/" --O="output_unicharset" --output_trainer="output_trainer" --X="D\Hebrew.xheights" --U="D\Hebrew.unicharset" 
+ 
+
+
